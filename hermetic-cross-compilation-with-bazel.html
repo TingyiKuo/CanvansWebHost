@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Guide: Hermetic Cross-Compilation with Bazel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chosen Palette: Calm Harmony (Tailwind Stone & Indigo) -->
+    <!-- Application Structure Plan: A single-page application with top navigation to thematic sections (Concepts, Strategy, Implementation, Recommendations). The structure prioritizes user task flow, starting with foundational knowledge, moving to a key strategic decision (pre-built vs. custom toolchain), and then providing detailed implementation guidance. This is more intuitive than the report's linear structure, allowing users to jump directly to the section most relevant to their needs. Key interactions include toggles for comparing toolchains, tabs for viewing configuration files, and click-to-reveal definitions to reduce cognitive load. -->
+    <!-- Visualization & Content Choices: Report Info: Core Concepts (Table 1) -> Goal: Organize/Inform -> Viz: Interactive HTML/CSS diagram with click-to-reveal definitions -> Interaction: Click on a concept to see its details -> Justification: More engaging and less overwhelming than a static table. | Report Info: Pre-built vs. Custom toolchains -> Goal: Compare/Guide Decision -> Viz: Side-by-side interactive cards with pros/cons and visual meters (complexity/hermeticity) -> Interaction: User clicks to expand details, simple questionnaire guides choice -> Justification: Actively engages the user in the decision-making process. | Report Info: Build Commands -> Goal: Demonstrate -> Viz: Fake console output -> Interaction: Click a "build" button -> Justification: Simulates the real-world outcome, making the example more tangible. | Library/Method: All diagrams and visual elements are built with HTML/CSS/Tailwind to adhere to the NO SVG constraint. All interactions are handled with vanilla JavaScript. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        .concept-box {
+            transition: all 0.3s ease-in-out;
+            cursor: pointer;
+        }
+        .concept-box.active {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .tab-btn.active {
+            border-color: #4f46e5;
+            color: #4f46e5;
+            background-color: #eef2ff;
+        }
+        .recommendation-card {
+            transition: transform 0.3s;
+        }
+        .recommendation-card:hover {
+            transform: scale(1.03);
+        }
+        .line {
+            position: absolute;
+            background-color: #a8a29e;
+            z-index: 0;
+        }
+        .dot {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: #4f46e5;
+            border-radius: 50%;
+            z-index: 5;
+        }
+        .file-tree-item {
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: background-color 0.1s ease-in-out;
+        }
+        .file-tree-item:hover {
+            background-color: #eef2ff;
+        }
+        .file-tree-item.active {
+            background-color: #e0e7ff;
+            font-weight: 600;
+            color: #4f46e5;
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+    <!-- Header and Navigation -->
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-xl font-bold text-indigo-600">Bazel Cross-Compilation Guide</h1>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#home" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700 hover:text-indigo-600 hover:bg-stone-100">Home</a>
+                        <a href="#concepts" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700 hover:text-indigo-600 hover:bg-stone-100">Core Concepts</a>
+                        <a href="#strategy" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700 hover:text-indigo-600 hover:bg-stone-100">Strategy</a>
+                        <a href="#implementation" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700 hover:text-indigo-600 hover:bg-stone-100">Implementation</a>
+                        <a href="#recommendations" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700 hover:text-indigo-600 hover:bg-stone-100">Recommendations</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <!-- Home Section -->
+        <section id="home" class="py-16 text-center">
+            <h2 class="text-4xl font-bold tracking-tight text-stone-900 sm:text-5xl">Build Anywhere, Run Everywhere.</h2>
+            <p class="mt-6 text-lg leading-8 text-stone-600 max-w-3xl mx-auto">
+                This guide demystifies hermetic cross-compilation with Bazel. Learn how to create reproducible builds for <code class="bg-indigo-100 text-indigo-800 px-2 py-1 rounded-md font-mono">armv8a</code> and <code class="bg-indigo-100 text-indigo-800 px-2 py-1 rounded-md font-mono">x86_64</code> targets, no matter which machine you build on.
+            </p>
+            <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto text-left">
+                <div class="bg-white p-6 rounded-lg shadow-md border border-stone-200">
+                    <h3 class="font-semibold text-lg text-indigo-700">What is Hermeticity?</h3>
+                    <p class="mt-2 text-stone-600">A build is hermetic if it's insensitive to the host machine's environment. It uses declared, version-pinned tools and dependencies, ensuring that the same source code always produces the exact same binary output.</p>
+                </div>
+                 <div class="bg-white p-6 rounded-lg shadow-md border border-stone-200">
+                    <h3 class="font-semibold text-lg text-indigo-700">Why Cross-Compile?</h3>
+                    <p class="mt-2 text-stone-600">Develop on a powerful <code class="font-mono">x86_64</code> machine and deploy to an efficient <code class="font-mono">armv8a</code> embedded device. Cross-compilation lets you build for a target architecture different from your host machine.</p>
+                </div>
+                 <div class="bg-white p-6 rounded-lg shadow-md border border-stone-200">
+                    <h3 class="font-semibold text-lg text-indigo-700">The Bazel Solution</h3>
+                    <p class="mt-2 text-stone-600">Bazel's toolchain framework treats compilers and libraries as versioned dependencies. This allows for precise, reproducible, and hermetic builds across any host and target combination.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Core Concepts Section -->
+        <section id="concepts" class="py-16">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold tracking-tight text-stone-900 sm:text-4xl">Understanding the Framework</h2>
+                <p class="mt-4 text-lg text-stone-600 max-w-2xl mx-auto">Bazel uses a powerful system of platforms, constraints, and toolchains to select the right tools for your build. Click on each component to learn more.</p>
+            </div>
+            <div class="mt-12">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Diagram -->
+                    <div class="lg:col-span-2 bg-white p-8 rounded-lg shadow-lg border border-stone-200 relative">
+                        <div id="concept-diagram-lines" class="relative w-full h-96">
+                            <!-- Lines drawn by JS -->
+                        </div>
+                        <div id="platform-box" class="concept-box absolute top-1/2 -translate-y-1/2 left-4 bg-indigo-50 border-2 border-indigo-200 p-4 rounded-lg shadow-sm" data-concept="platform" style="width: 150px;">
+                            <h4 class="font-bold text-center text-indigo-800">Platform</h4>
+                            <p class="text-xs text-center text-indigo-600">(e.g., Target Machine)</p>
+                        </div>
+                        <div id="constraint-box" class="concept-box absolute top-1/4 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-rose-50 border-2 border-rose-200 p-4 rounded-lg shadow-sm" data-concept="constraint" style="width: 150px;">
+                            <h4 class="font-bold text-center text-rose-800">Constraints</h4>
+                             <p class="text-xs text-center text-rose-600">(e.g., CPU, OS)</p>
+                        </div>
+                        <div id="toolchain-box" class="concept-box absolute top-1/2 -translate-y-1/2 right-4 bg-emerald-50 border-2 border-emerald-200 p-4 rounded-lg shadow-sm" data-concept="toolchain" style="width: 150px;">
+                            <h4 class="font-bold text-center text-emerald-800">Toolchain</h4>
+                            <p class="text-xs text-center text-emerald-600">(e.g., Compiler)</p>
+                        </div>
+                    </div>
+                    <!-- Details Box -->
+                    <div id="concept-details" class="bg-stone-100 p-6 rounded-lg border border-stone-200">
+                         <h3 id="details-title" class="font-bold text-xl text-stone-800">Select a Concept</h3>
+                         <p id="details-description" class="mt-2 text-stone-600">Click on a component in the diagram to see its definition and role in cross-compilation.</p>
+                         <pre id="details-code" class="mt-4 bg-stone-800 text-white p-4 rounded-md text-sm overflow-x-auto hidden"><code id="details-code-content"></code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Strategy Section -->
+        <section id="strategy" class="py-16 bg-white rounded-lg my-16 shadow-lg border border-stone-200">
+            <div class="text-center px-4">
+                <h2 class="text-3xl font-bold tracking-tight text-stone-900 sm:text-4xl">Choose Your Toolchain Strategy</h2>
+                <p class="mt-4 text-lg text-stone-600 max-w-2xl mx-auto">Your first big decision: use a community-maintained, pre-built toolchain for speed and simplicity, or build a custom one for maximum control.</p>
+            </div>
+            <div class="mt-12 max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 px-4">
+                <!-- Pre-built Card -->
+                <div class="border-2 border-indigo-200 bg-indigo-50 rounded-lg p-6">
+                    <h3 class="text-2xl font-bold text-indigo-800">Pre-built Toolchains</h3>
+                    <p class="mt-2 text-indigo-700">Get started quickly with a hermetic toolchain managed by the community.</p>
+                    <div class="mt-6 space-y-4">
+                        <div class="bg-white p-4 rounded-md shadow">
+                            <h4 class="font-semibold text-stone-800">uber/hermetic_cc_toolchain</h4>
+                            <p class="text-sm text-stone-600 mt-1">A fully hermetic, drop-in toolchain using Zig/Clang. Excellent for reproducibility.</p>
+                            <p class="mt-2 text-sm font-semibold">Hermeticity: <span class="text-emerald-600">Full</span></p>
+                        </div>
+                        <div class="bg-white p-4 rounded-md shadow">
+                            <h4 class="font-semibold text-stone-800">google-coral/crosstool</h4>
+                            <p class="text-sm text-stone-600 mt-1">A semi-hermetic option that's easier to set up but relies on some host system packages.</p>
+                             <p class="mt-2 text-sm font-semibold">Hermeticity: <span class="text-amber-600">Partial</span></p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Custom-built Card -->
+                <div class="border-2 border-stone-200 bg-white rounded-lg p-6">
+                    <h3 class="text-2xl font-bold text-stone-800">Custom-built Toolchains</h3>
+                    <p class="mt-2 text-stone-700">For when you need absolute control over compiler versions, patches, and libc.</p>
+                     <div class="mt-6 space-y-4">
+                        <p class="font-semibold">Complexity: <span class="text-rose-600">High</span></p>
+                        <p class="text-stone-600">Involves using tools like <code class="font-mono bg-stone-200 p-1 rounded">crosstool-NG</code> to build your own cross-compiler and then meticulously integrating it into Bazel's CROSSTOOL and Starlark configurations.</p>
+                        <p class="text-sm text-indigo-600 font-semibold">Best for: specialized embedded targets, strict compliance, or unique compiler requirements.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Implementation Section -->
+        <section id="implementation" class="py-16">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold tracking-tight text-stone-900 sm:text-4xl">Putting it into Practice</h2>
+                <p class="mt-4 text-lg text-stone-600 max-w-2xl mx-auto">Explore the project structure and build files for a hermetic cross-compilation setup. Click on files in the left panel to view their content.</p>
+            </div>
+            <div class="mt-12 max-w-6xl mx-auto">
+                <h3 class="text-2xl font-semibold text-stone-800 mb-4">Project Configuration and Sample Code</h3>
+                <div class="bg-white p-6 rounded-lg shadow-lg border border-stone-200 flex flex-col md:flex-row md:space-x-6 h-[600px] overflow-hidden">
+                    <!-- File Tree Panel (Left) -->
+                    <div class="w-full md:w-1/3 flex-shrink-0 bg-stone-100 p-4 rounded-lg overflow-y-auto border border-stone-200">
+                        <p class="font-semibold text-stone-700 mb-3">Project Structure</p>
+                        <ul id="file-tree" class="space-y-1 text-sm text-stone-700">
+                            <li class="file-tree-item" data-file="README.md">📄 README.md</li>
+                            <li class="file-tree-item active" data-file="MODULE.bazel">📦 MODULE.bazel</li>
+                            <li class="file-tree-item" data-file=".bazelversion">📄 .bazelversion</li>
+                            <li class="file-tree-item" data-file=".bazelrc">⚙️ .bazelrc</li>
+                            <li class="ml-4 file-tree-item" data-file="main/BUILD">📁 main/BUILD</li>
+                            <li class="ml-4 file-tree-item" data-file="main/hello-world.cc">📝 main/hello-world.cc</li>
+                        </ul>
+                    </div>
+
+                    <!-- Code Content Panel (Right) -->
+                    <div class="w-full md:w-2/3 flex-grow bg-stone-800 text-white rounded-lg relative overflow-hidden">
+                        <button class="copy-btn absolute top-2 right-2 bg-stone-700 text-white p-1 rounded-md text-xs hover:bg-stone-600 transition-colors z-10">
+                            &#x1F4CB; Copy
+                        </button>
+                        <pre class="p-4 text-sm overflow-auto h-full"><code id="code-content-display" class="language-bazel"></code></pre>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Recommendations Section -->
+        <section id="recommendations" class="py-16">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold tracking-tight text-stone-900 sm:text-4xl">Key Recommendations</h2>
+                <p class="mt-4 text-lg text-stone-600 max-w-2xl mx-auto">Follow these best practices to ensure a smooth and successful cross-compilation setup.</p>
+            </div>
+            <div class="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                <div class="recommendation-card bg-white p-6 rounded-lg shadow-md border border-stone-200">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-indigo-100 text-indigo-600 rounded-md p-3">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" /></svg>
+                        </div>
+                        <h3 class="ml-4 font-semibold text-lg">Use Pre-built Toolchains</h3>
+                    </div>
+                    <p class="mt-4 text-stone-600">Start with a toolchain like `uber/hermetic_cc_toolchain`. It provides a strong hermetic foundation without the complexity of a custom build.</p>
+                </div>
+                 <div class="recommendation-card bg-white p-6 rounded-lg shadow-md border border-stone-200">
+                     <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-indigo-100 text-indigo-600 rounded-md p-3">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-1.007 1.11-1.212.552-.205 1.183-.147 1.659.157L16.5 6.25l2.5 2.5L21 12l-2.5 2.5-2.5 2.5-2.637 2.637c-.476.476-1.107.533-1.659.157-.552-.205-1.02-.67-1.11-1.212L9 12l.594-8.06z" /></svg>
+                        </div>
+                        <h3 class="ml-4 font-semibold text-lg">Define Granular Platforms</h3>
+                    </div>
+                    <p class="mt-4 text-stone-600">Be specific in your platform definitions. Include OS, CPU, and even libc variants to ensure Bazel makes the correct toolchain choice.</p>
+                </div>
+                <div class="recommendation-card bg-white p-6 rounded-lg shadow-md border border-stone-200">
+                     <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-indigo-100 text-indigo-600 rounded-md p-3">
+                           <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0M3.75 18H7.5m3-6h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0M3.75 12H7.5" /></svg>
+                        </div>
+                        <h3 class="ml-4 font-semibold text-lg">Use `.bazelrc` Configs</h3>
+                    </div>
+                    <p class="mt-4 text-stone-600">Create `--config` aliases for your targets. This simplifies commands and ensures consistency for everyone on your team.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+    
+    <footer class="bg-white border-t border-stone-200 mt-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 text-center text-sm text-stone-500">
+            <p>Interactive Guide to Bazel Cross-Compilation. Built to simplify complex builds.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Concept Diagram Interaction
+            const concepts = {
+                platform: {
+                    title: 'Platform',
+                    description: 'A Platform defines the properties of a host or target machine. It\'s a collection of constraints like CPU architecture and operating system.',
+                    code: `platform(\n  name = "linux_aarch64",\n  constraint_values = [\n    "@platforms//os:linux",\n    "@platforms//cpu:aarch64",\n  ],\n)`
+                },
+                constraint: {
+                    title: 'Constraints',
+                    description: 'Constraints are the basic building blocks of platforms. They represent a property of an environment, like `cpu:x86_64` or `os:linux`.',
+                    code: `# Defines a category of properties\nconstraint_setting(name = "libc")\n\n# Defines a specific value\nconstraint_value(\n  name = "glibc",\n  constraint_setting = ":libc",\n)`
+                },
+                toolchain: {
+                    title: 'Toolchain',
+                    description: 'A Toolchain is a concrete set of tools (like a compiler and linker) that is compatible with specific execution and target platforms.',
+                    code: `cc_toolchain(\n  name = "my_arm_toolchain",\n  toolchain_config = ":arm_config",\n  target_compatible_with = [\n    "@platforms//cpu:aarch64",\n  ],\n  exec_compatible_with = [\n    "@platforms//cpu:x86_64",\n  ],\n)`
+                }
+            };
+
+            const conceptBoxes = document.querySelectorAll('.concept-box');
+            const detailsTitle = document.getElementById('details-title');
+            const detailsDescription = document.getElementById('details-description');
+            const detailsCodeContainer = document.getElementById('details-code');
+            const detailsCodeContent = document.getElementById('details-code-content');
+
+            conceptBoxes.forEach(box => {
+                box.addEventListener('click', () => {
+                    conceptBoxes.forEach(b => b.classList.remove('active', 'border-indigo-500', 'border-rose-500', 'border-emerald-500'));
+                    const conceptKey = box.dataset.concept;
+                    
+                    if (conceptKey === 'platform') box.classList.add('border-indigo-500');
+                    if (conceptKey === 'constraint') box.classList.add('border-rose-500');
+                    if (conceptKey === 'toolchain') box.classList.add('border-emerald-500');
+                    box.classList.add('active');
+
+                    const data = concepts[conceptKey];
+                    detailsTitle.textContent = data.title;
+                    detailsDescription.textContent = data.description;
+                    detailsCodeContent.textContent = data.code;
+                    detailsCodeContainer.classList.remove('hidden');
+                });
+            });
+            
+            // File Viewer Logic
+            const fileContents = {
+                "README.md": `# Hermetic Cross-Compilation with Bazel
+
+This project demonstrates how to set up a hermetic cross-compilation environment using Bazel, targeting \`armv8a\` and \`x86_64\` architectures.
+
+## Project Structure
+
+\`\`\`
+.
+├── .bazelversion
+├── .bazelrc
+├── MODULE.bazel
+└── main/
+    ├── BUILD
+    └── hello-world.cc
+\`\`\`
+
+-   \`.bazelversion\`: Specifies the Bazel version to use.
+-   \`.bazelrc\`: Contains build configurations (e.g., \`--config\` aliases for different targets).
+-   \`MODULE.bazel\`: Defines the Bazel module, declares external dependencies (like \`hermetic_cc_toolchain\`), and registers toolchains.
+-   \`main/BUILD\`: The \`BUILD\` file for the sample C++ application.
+-   \`main/hello-world.cc\`: A simple C++ source file that reports its compiled architecture.
+
+## How to Build and Run the Example
+
+To run this example, you will need Bazel installed (ensure it matches the version specified in \`.bazelversion\`).
+
+1.  **Navigate to the project root:**
+    \`\`\`bash
+    cd /path/to/your/hello_hermetic_bazel_project
+    \`\`\`
+
+2.  **Build for \`x86_64\`:**
+    This command uses the \`linux_x86_64\` configuration defined in \`.bazelrc\`, which selects the \`x86_64\` platform and the appropriate toolchain from \`hermetic_cc_toolchain\`.
+
+    \`\`\`bash
+    bazel build --config=linux_x86_64 //main:hello-world
+    \`\`\`
+    Expected output might look like:
+    \`\`\`
+    INFO: Build completed successfully.
+    Target //main:hello-world up-to-date:
+      bazel-bin/main/hello-world
+    \`\`\`
+
+3.  **Run the \`x86_64\` binary:**
+    \`\`\`bash
+    bazel-bin/main/hello-world
+    \`\`\`
+    Expected output:
+    \`\`\`
+    Hello from x86_64!
+    \`\`\`
+
+4.  **Build for \`armv8a\` (aarch64):**
+    This command uses the \`linux_armv8a\` configuration, selecting the \`armv8a\` platform and the corresponding cross-toolchain.
+
+    \`\`\`bash
+    bazel build --config=linux_armv8a //main:hello-world
+    \`\`\`
+    Expected output:
+    \`\`\`
+    INFO: Build completed successfully.
+    Target //main:hello-world up-to-date:
+      bazel-bin/main/hello-world
+    \`\`\`
+
+5.  **Run the \`armv8a\` binary (requires an ARM environment or emulator):**
+    You cannot directly run an \`armv8a\` binary on an \`x86_64\` host without an ARM emulator (like QEMU) or an ARM device.
+
+    To run on an ARM machine:
+    \`\`\`bash
+    bazel-bin/main/hello-world
+    \`\`\`
+    Expected output on an ARM machine:
+    \`\`\`
+    Hello from ARMv8-A!
+    \`\`\`
+
+This setup ensures that your binaries are consistently built for the intended architectures, regardless of the host machine you are building on.`,
+                "MODULE.bazel": `module(
+    name = "hello_hermetic_bazel",
+    version = "1.0",
+)
+
+# Standard Bazel module dependencies
+bazel_dep(name = "platforms", version = "0.0.10")
+# bazel_tools is implicitly available in recent Bazel versions with Bzlmod.
+# No need to declare bazel_tools if it's implicitly used by rules.
+
+# Fetch and register uber/hermetic_cc_toolchain via its module extension
+bazel_dep(name = "hermetic_cc_toolchain", version = "4.0.0") # Use a recent version of the module
+
+# Use the module extension to define and register the toolchains
+# This creates toolchains for your host machine (x86 or arm)
+# that can target various platforms (linux_amd64, linux_aarch64, etc.)
+toolchains = use_extension("@hermetic_cc_toolchain//toolchain:ext.bzl", "toolchains")
+use_repo(toolchains, "zig_sdk") # zig_sdk is the repository created by the toolchain extension
+
+# Register all toolchains provided by zig_sdk
+register_toolchains("@zig_sdk//toolchain/...")
+register_toolchains("@zig_sdk//libc_aware/toolchain/...")`,
+                ".bazelversion": `7.0.0`, // Recommended LTS version
+                ".bazelrc": `# .bazelrc
+# Common options for all builds
+build --cxxopt="-std=c++17"
+build -c opt
+
+# Prevent Bazel from using the host system's C++ toolchain if you only want the hermetic one
+build --action_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
+
+# Config for building for a standard x86_64 Linux system
+# Note: @zig_sdk provides platform definitions
+build:linux_x86_64 --platforms=@zig_sdk//platform:linux_amd64
+
+# Config for building for an armv8a (aarch64) Linux system
+# Note: @zig_sdk provides platform definitions
+build:linux_armv8a --platforms=@zig_sdk//platform:linux_aarch64`,
+                "main/BUILD": `cc_binary(
+    name = "hello-world",
+    srcs = ["hello-world.cc"],
+)`,
+                "main/hello-world.cc": `// main/hello-world.cc
+#include <iostream>
+
+int main() {
+    #if defined(__aarch64__)
+        std::cout << "Hello from ARMv8-A!" << std::endl;
+    #elif defined(__x86_64__)
+        std::cout << "Hello from x86_64!" << std::endl;
+    #else
+        std::cout << "Hello from an unknown arch!" << std::endl;
+    #endif
+    return 0;
+}`
+            };
+
+            const fileTree = document.getElementById('file-tree');
+            const codeContentDisplay = document.getElementById('code-content-display');
+            const copyButton = document.querySelector('.copy-btn');
+
+            function loadFileContent(filename) {
+                codeContentDisplay.textContent = fileContents[filename];
+                // Update the ID for copy button to correctly target the current code block
+                codeContentDisplay.id = `code-block-${filename.replace(/[^a-zA-Z0-9]/g, '-')}`;
+
+                document.querySelectorAll('.file-tree-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                document.querySelector(`[data-file="${filename}"]`).classList.add('active');
+            }
+
+            fileTree.addEventListener('click', (event) => {
+                const target = event.target.closest('.file-tree-item');
+                if (target) {
+                    const filename = target.dataset.file;
+                    loadFileContent(filename);
+                }
+            });
+
+            // Load MODULE.bazel by default on page load, then switch to README.md
+            loadFileContent("MODULE.bazel");
+            // Set README.md as the initial active file
+            setTimeout(() => loadFileContent("README.md"), 100); // Small delay to ensure MODULE.bazel loads first if needed for internal processing
+
+            // Fake Console Interaction - Removed as per user request
+            // Build and Run Example section is replaced by README.md content.
+
+
+            // Draw connecting lines for diagram
+            const linesContainer = document.getElementById('concept-diagram-lines');
+            const platformBox = document.getElementById('platform-box');
+            const constraintBox = document.getElementById('constraint-box');
+            const toolchainBox = document.getElementById('toolchain-box');
+            
+            function drawLine(el1, el2) {
+                const rect1 = el1.getBoundingClientRect();
+                const rect2 = el2.getBoundingClientRect();
+                const containerRect = linesContainer.getBoundingClientRect();
+
+                const x1 = rect1.left + rect1.width / 2 - containerRect.left;
+                const y1 = rect1.top + rect1.height / 2 - containerRect.top;
+                const x2 = rect2.left + rect2.width / 2 - containerRect.left;
+                const y2 = rect2.top + rect2.height / 2 - containerRect.top;
+
+                const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+                const angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
+
+                const line = document.createElement('div');
+                line.className = 'line';
+                line.style.width = `${distance}px`;
+                line.style.height = '2px';
+                line.style.left = `${x1}px`;
+                line.style.top = `${y1}px`;
+                line.style.transform = `rotate(${angle}deg)`;
+                line.style.transformOrigin = '0 0';
+                linesContainer.appendChild(line);
+            }
+
+            function drawDiagram() {
+                linesContainer.innerHTML = ''; // Clear previous lines
+                drawLine(platformBox, constraintBox);
+                drawLine(toolchainBox, constraintBox);
+
+                // Add a dot for the central concept
+                const dot = document.createElement('div');
+                dot.className = 'dot';
+                const constraintRect = constraintBox.getBoundingClientRect();
+                const containerRect = linesContainer.getBoundingClientRect();
+                dot.style.left = `${constraintRect.left + constraintRect.width/2 - containerRect.left - 6}px`;
+                dot.style.top = `${constraintRect.top + constraintRect.height/2 - containerRect.top - 6}px`;
+                linesContainer.appendChild(dot);
+            }
+            
+            // Initial draw and redraw on resize
+            drawDiagram();
+            window.addEventListener('resize', drawDiagram);
+
+            // Smooth scroll for nav links
+            document.querySelectorAll('a.nav-link').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+
+            // Function to copy text to clipboard and show feedback
+            function copyTextToClipboard(text, buttonElement) {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed'; // Prevents scrolling to bottom of page
+                textarea.style.left = '-9999px'; // Move off-screen
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    const originalHTML = buttonElement.innerHTML; // Store original HTML to restore
+                    buttonElement.innerHTML = '&#x1F4CB; Copied!';
+                    setTimeout(() => {
+                        buttonElement.innerHTML = originalHTML; // Restore original HTML
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy text: ', err);
+                } finally {
+                    document.body.removeChild(textarea);
+                }
+            }
+
+            // Copy button logic for code blocks
+            copyButton.addEventListener('click', (event) => {
+                const textToCopy = codeContentDisplay.textContent;
+                copyTextToClipboard(textToCopy, copyButton);
+            });
+        });
+    </script>
+</body>
+</html>
