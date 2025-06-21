@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Yocto Project Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .sidebar-item.active {
+            background-color: #4f46e5;
+            color: white;
+        }
+        .sidebar-item:hover {
+            background-color: #e0e7ff;
+        }
+        .sidebar-item.active:hover {
+            background-color: #4338ca;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            border-bottom: 2px dotted #6366f1;
+            cursor: pointer;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 250px;
+            background-color: #111827;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -125px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #111827 transparent transparent transparent;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        details > summary {
+            list-style: none;
+        }
+        details > summary::-webkit-details-marker {
+            display: none;
+        }
+        .quiz-option.correct {
+            background-color: #dcfce7;
+            border-color: #22c55e;
+        }
+        .quiz-option.incorrect {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+        }
+        .code-block {
+            position: relative;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white shadow-md flex-shrink-0 overflow-y-auto">
+            <div class="p-4 border-b sticky top-0 bg-white z-10">
+                <h1 class="text-xl font-bold text-indigo-600">Yocto Project Guide</h1>
+            </div>
+            <nav id="sidebar" class="p-4 space-y-2">
+                 <a href="#introduction" class="sidebar-item block px-4 py-2 rounded-lg font-medium transition-colors duration-200">Introduction</a>
+                 <a href="#fundamentals" class="sidebar-item block px-4 py-2 rounded-lg font-medium transition-colors duration-200">Fundamentals</a>
+                 <a href="#setup" class="sidebar-item block px-4 py-2 rounded-lg font-medium transition-colors duration-200">Environment Setup</a>
+                 <a href="#commands" class="sidebar-item block px-4 py-2 rounded-lg font-medium transition-colors duration-200">BitBake Commands</a>
+                 <a href="#customization" class="sidebar-item block px-4 py-2 rounded-lg font-medium transition-colors duration-200">Customization</a>
+                 <a href="#debugging" class="sidebar-item block px-4 py-2 rounded-lg font-medium transition-colors duration-200">Debugging</a>
+                 <a href="#qualcomm" class="sidebar-item block px-4 py-2 rounded-lg font-medium transition-colors duration-200">Qualcomm IQ9</a>
+                 <a href="#example" class="sidebar-item block px-4 py-2 rounded-lg font-medium transition-colors duration-200">Practical Example</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto p-6 md:p-8">
+            <!-- Introduction Section -->
+            <section id="introduction" class="content-section space-y-6">
+                <h2 class="text-3xl font-bold border-b pb-2">Introduction to the Yocto Project</h2>
+                
+                <details class="bg-white p-4 rounded-lg shadow-sm" open>
+                    <summary class="font-semibold text-lg cursor-pointer flex justify-between items-center">
+                        What is Yocto?
+                        <svg class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </summary>
+                    <div class="mt-4 text-gray-700 space-y-2">
+                        <p>The Yocto Project is an open-source collaboration that provides a framework for developers to create custom Linux-based systems for embedded devices. Instead of scaling down a desktop Linux distribution, Yocto builds a tailored system from the ground up, ensuring it's optimized for the specific hardware and application.</p>
+                        <p>It provides a flexible suite of tools and a shared environment for embedded developers, promoting efficiency and innovation across a wide range of industries like automotive, medical, and IoT.</p>
+                    </div>
+                </details>
+
+                <details class="bg-white p-4 rounded-lg shadow-sm">
+                    <summary class="font-semibold text-lg cursor-pointer flex justify-between items-center">
+                        Key Concepts & Ecosystem
+                        <svg class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </summary>
+                    <div class="mt-4 text-gray-700">
+                        <p>The Yocto Project ecosystem consists of several key components:</p>
+                        <ul class="list-disc list-inside mt-2 space-y-2">
+                            <li><strong class="text-indigo-600"><span class="tooltip">OpenEmbedded (OE)<span class="tooltiptext">The foundational build framework providing core recipes and packages.</span></span></strong>: The build framework that provides the core infrastructure of recipes and classes.</li>
+                            <li><strong class="text-indigo-600"><span class="tooltip">BitBake<span class="tooltiptext">The powerful build engine that parses metadata, schedules tasks, and executes the build process.</span></span></strong>: The heart of the build system. It's a task scheduler and execution engine that parses recipes and configuration files to build the final image.</li>
+                            <li><strong class="text-indigo-600"><span class="tooltip">Poky<span class="tooltiptext">The official reference OS distribution. It's a working example used as a template for custom systems.</span></span></strong>: The official reference distribution. It bundles together BitBake, OpenEmbedded-Core, and a set of default metadata to serve as a fully functional example.</li>
+                        </ul>
+                    </div>
+                </details>
+                
+                <div class="bg-indigo-50 p-6 rounded-lg shadow-sm">
+                    <h3 class="font-semibold text-lg mb-4">Check Your Understanding</h3>
+                    <div class="quiz" data-quiz-id="intro-quiz">
+                        <p class="font-medium mb-2">What is the primary role of BitBake in the Yocto Project?</p>
+                        <div class="space-y-2">
+                            <button class="quiz-option text-left w-full p-3 border rounded-lg hover:bg-indigo-100 transition">A) A pre-built Linux distribution</button>
+                            <button class="quiz-option text-left w-full p-3 border rounded-lg hover:bg-indigo-100 transition" data-correct>B) A build engine and task scheduler</button>
+                            <button class="quiz-option text-left w-full p-3 border rounded-lg hover:bg-indigo-100 transition">C) A collection of hardware drivers</button>
+                        </div>
+                        <p class="quiz-feedback mt-3 text-sm font-medium"></p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="fundamentals" class="content-section space-y-6">
+                <h2 class="text-3xl font-bold border-b pb-2">Yocto Project Fundamentals</h2>
+                <details class="bg-white p-4 rounded-lg shadow-sm">
+                    <summary class="font-semibold text-lg cursor-pointer flex justify-between items-center">The Layer Model<svg class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></summary>
+                    <div class="mt-4 text-gray-700 space-y-2">
+                        <p>Layers are repositories containing metadata that tell the build system what to do. They allow for logical separation of information, promoting collaboration and reuse.</p>
+                        <p>Key layers include:</p>
+                        <ul class="list-disc list-inside mt-2 space-y-2">
+                            <li><strong class="text-indigo-600">meta-poky</strong>: Core metadata for the Poky reference distribution.</li>
+                             <li><strong class="text-indigo-600">meta-openembedded</strong>: A collection of community-maintained recipes.</li>
+                            <li><strong class="text-indigo-600">BSP Layers (e.g., meta-qcom)</strong>: Provides hardware-specific configurations and drivers (Board Support Package).</li>
+                            <li><strong class="text-indigo-600">Custom Layers</strong>: Your own layers for project-specific recipes and configurations.</li>
+                        </ul>
+                        <div class="mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-400">
+                           <p><strong class="font-semibold">Best Practice:</strong> Isolate your custom changes in dedicated layers. This makes it much easier to update base Yocto or BSP layers in the future.</p>
+                        </div>
+                    </div>
+                </details>
+
+                <details class="bg-white p-4 rounded-lg shadow-sm">
+                    <summary class="font-semibold text-lg cursor-pointer flex justify-between items-center">Recipes (.bb files)<svg class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></summary>
+                    <div class="mt-4 text-gray-700 space-y-4">
+                        <p>Recipes are the most common form of metadata. They are files (with a `.bb` extension) that contain instructions for building a specific piece of software. A recipe typically defines:</p>
+                        <ul class="list-disc list-inside">
+                           <li>Where to get the source code (SRC_URI).</li>
+                           <li>Dependencies on other recipes.</li>
+                           <li>Configuration and compilation options.</li>
+                           <li>How to install the compiled files.</li>
+                        </ul>
+                        <p>Here is a simplified example of a recipe:</p>
+                        <div class="code-block bg-gray-900 text-white p-4 rounded-lg">
+                            <button class="copy-btn absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-sm px-2 py-1 rounded">Copy</button>
+                            <pre><code>DESCRIPTION = "My Custom Application"
+LICENSE = "MIT"
+SRC_URI = "file://my-app-source.tar.gz"
+
+S = "${WORKDIR}/my-app-source"
+
+do_compile() {
+    oe_runmake
+}
+
+do_install() {
+    install -d ${D}${bindir}
+    install -m 0755 ${S}/my_app_executable ${D}${bindir}/
+}</code></pre>
+                        </div>
+                    </div>
+                </details>
+
+                <details class="bg-white p-4 rounded-lg shadow-sm">
+                    <summary class="font-semibold text-lg cursor-pointer flex justify-between items-center">Configuration Files (.conf)<svg class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></summary>
+                     <div class="mt-4 text-gray-700 space-y-4">
+                        <p>Configuration files control the build process. The two most important ones are:</p>
+                        <ul class="list-disc list-inside">
+                           <li><strong class="text-indigo-600">conf/local.conf</strong>: For user-specific settings like the target machine, packaging format, and download directories.</li>
+                           <li><strong class="text-indigo-600">conf/bblayers.conf</strong>: Lists all the layers that BitBake should include in the build. The order matters!</li>
+                        </ul>
+                     </div>
+                </details>
+            </section>
+
+             <section id="setup" class="content-section space-y-6">
+                <h2 class="text-3xl font-bold border-b pb-2">Environment Setup</h2>
+                <details class="bg-white p-4 rounded-lg shadow-sm">
+                    <summary class="font-semibold text-lg cursor-pointer flex justify-between items-center">Host System Requirements<svg class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></summary>
+                    <div class="mt-4 text-gray-700">
+                        <p>Yocto is resource-intensive. Here are the recommended specs for your host machine:</p>
+                        <ul class="list-disc list-inside mt-2 space-y-2">
+                           <li><strong>OS:</strong> A modern Linux distribution (Ubuntu, Fedora, etc.). WSL2 on Windows is also viable.</li>
+                           <li><strong>Disk Space:</strong> <strong>90-300 GB</strong> is highly recommended. An SSD will significantly speed up builds.</li>
+                           <li><strong>RAM:</strong> <strong>8 GB</strong> minimum, but <strong>16-32 GB+</strong> is strongly advised to prevent build failures.</li>
+                           <li><strong>CPU:</strong> A multi-core processor is crucial for parallel builds.</li>
+                        </ul>
+                    </div>
+                </details>
+                <details class="bg-white p-4 rounded-lg shadow-sm">
+                    <summary class="font-semibold text-lg cursor-pointer flex justify-between items-center">Essential Host Packages (for Ubuntu)<svg class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></summary>
+                    <div class="mt-4 text-gray-700">
+                         <p>Install the required packages for your host system. For an Ubuntu-based system, use:</p>
+                         <div class="code-block bg-gray-900 text-white p-4 rounded-lg mt-2">
+                            <button class="copy-btn absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-sm px-2 py-1 rounded">Copy</button>
+                            <pre><code class="break-words">sudo apt install gawk wget git diffstat unzip texinfo gcc build-essential chrpath socat cpio python3 python3-pip python3-pexpect xz-utils debianutils iputils-ping python3-git python3-jinja2 libegl1-mesa libsdl1.2-dev python3-subunit mesa-common-dev zstd liblz4-tool file locales -y</code></pre>
+                        </div>
+                    </div>
+                </details>
+                <details class="bg-white p-4 rounded-lg shadow-sm">
+                    <summary class="font-semibold text-lg cursor-pointer flex justify-between items-center">Initializing the Build Environment<svg class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></summary>
+                    <div class="mt-4 text-gray-700">
+                         <p>After cloning the Poky repository, you need to source a script to set up your shell environment for building.</p>
+                         <div class="code-block bg-gray-900 text-white p-4 rounded-lg mt-2">
+                            <button class="copy-btn absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-sm px-2 py-1 rounded">Copy</button>
+                            <pre><code># First, clone the poky repository
+git clone git://git.yoctoproject.org/poky
+
+# Navigate into the directory
+cd poky
+
+# Source the environment script
+source oe-init-build-env</code></pre>
+                        </div>
+                        <p class="mt-2">This command creates the `build` directory and populates it with the `conf/local.conf` and `conf/bblayers.conf` files.</p>
+                    </div>
+                </details>
+            </section>
+
+            <section id="commands" class="content-section space-y-6">
+                <h2 class="text-3xl font-bold border-b pb-2">Essential BitBake Commands</h2>
+                <div class="bg-white p-6 rounded-lg shadow-sm">
+                    <p>BitBake is your primary tool for building. Here are some of the most common commands and what they do.</p>
+                     <div class="mt-4 space-y-3">
+                        <div class="code-block bg-gray-900 text-white p-4 rounded-lg">
+                            <button class="copy-btn absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-sm px-2 py-1 rounded">Copy</button>
+                            <pre><code>bitbake &lt;image-name&gt;</code></pre>
+                            <p class="text-gray-400 mt-2 text-sm">// Builds a complete system image. Example: `bitbake core-image-minimal`</p>
+                        </div>
+                         <div class="code-block bg-gray-900 text-white p-4 rounded-lg">
+                            <button class="copy-btn absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-sm px-2 py-1 rounded">Copy</button>
+                            <pre><code>bitbake &lt;recipe-name&gt;</code></pre>
+                            <p class="text-gray-400 mt-2 text-sm">// Builds a single software package. Example: `bitbake gdb`</p>
+                        </div>
+                         <div class="code-block bg-gray-900 text-white p-4 rounded-lg">
+                            <button class="copy-btn absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-sm px-2 py-1 rounded">Copy</button>
+                            <pre><code>bitbake -c &lt;task&gt; &lt;recipe-name&gt;</code></pre>
+                            <p class="text-gray-400 mt-2 text-sm">// Executes a specific task for a recipe. Example: `bitbake -c compile gdb`</p>
+                        </div>
+                         <div class="code-block bg-gray-900 text-white p-4 rounded-lg">
+                            <button class="copy-btn absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-sm px-2 py-1 rounded">Copy</button>
+                            <pre><code>bitbake -c cleanall &lt;recipe-name&gt;</code></pre>
+                            <p class="text-gray-400 mt-2 text-sm">// Drastic clean: removes all build output, downloaded source, and cache entries for a recipe.</p>
+                        </div>
+                         <div class="code-block bg-gray-900 text-white p-4 rounded-lg">
+                            <button class="copy-btn absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-sm px-2 py-1 rounded">Copy</button>
+                            <pre><code>bitbake -e &lt;recipe-name&gt;</code></pre>
+                            <p class="text-gray-400 mt-2 text-sm">// Show environment: prints all variable values for a recipe. Great for debugging.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="customization" class="content-section space-y-6">
+                 <h2 class="text-3xl font-bold border-b pb-2">Customization: Layers, Recipes, and Images</h2>
+                 <details class="bg-white p-4 rounded-lg shadow-sm" open>
+                    <summary class="font-semibold text-lg cursor-pointer flex justify-between items-center">Creating and Managing Custom Layers<svg class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></summary>
+                    <div class="mt-4 text-gray-700 space-y-4">
+                        <p>The `bitbake-layers` tool helps manage your layers.</p>
+                        <div class="code-block bg-gray-900 text-white p-4 rounded-lg">
+                            <button class="copy-btn absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-sm px-2 py-1 rounded">Copy</button>
+                            <pre><code># Create a new layer
+bitbake-layers create-layer meta-myproject
+
+# Add the new layer to your bblayers.conf
+bitbake-layers add-layer meta-myproject</code></pre>
+                        </div>
+                    </div>
+                 </details>
+                  <details class="bg-white p-4 rounded-lg shadow-sm">
+                    <summary class="font-semibold text-lg cursor-pointer flex justify-between items-center">Modifying Existing Recipes with .bbappend<svg class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></summary>
+                    <div class="mt-4 text-gray-700 space-y-4">
+                        <p>To modify an existing recipe, you should almost never edit it directly. Instead, create a <strong class="text-indigo-600">.bbappend</strong> file in your custom layer. This file "appends" or overrides the original recipe.</p>
+                        <p>For example, to add a patch to the `busybox` recipe, you would create `meta-myproject/recipes-core/busybox/busybox_%.bbappend` with the following content:</p>
+                        <div class="code-block bg-gray-900 text-white p-4 rounded-lg">
+                            <button class="copy-btn absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-sm px-2 py-1 rounded">Copy</button>
+                            <pre><code>FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+SRC_URI += "file://my-custom-patch.patch"</code></pre>
+                        </div>
+                        <div class="mt-4 p-4 bg-blue-50 border-l-4 border-blue-400">
+                           <p><strong class="font-semibold">What is `devtool`?</strong> For more complex changes, the `devtool modify <recipe>` command is incredibly powerful. It fetches the source, applies patches, and sets up a local Git repository for you to work in, then helps generate the patch and bbappend file when you're done.</p>
+                        </div>
+                    </div>
+                 </details>
+            </section>
+            
+            <section id="debugging" class="content-section space-y-6">
+                <h2 class="text-3xl font-bold border-b pb-2">Debugging Yocto Builds</h2>
+                <details class="bg-white p-4 rounded-lg shadow-sm" open>
+                    <summary class="font-semibold text-lg cursor-pointer flex justify-between items-center">Troubleshooting Build Errors<svg class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></summary>
+                    <div class="mt-4 text-gray-700 space-y-4">
+                        <p>Build failures are common. Here are some frequent causes and solutions:</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><strong class="text-red-600">Resource Exhaustion:</strong> Insufficient disk space or RAM. A "Killed signal" error often means you ran out of memory. Try reducing parallel jobs in `local.conf`:
+                                <div class="code-block bg-gray-900 text-white p-4 rounded-lg my-2">
+                                    <button class="copy-btn absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-sm px-2 py-1 rounded">Copy</button>
+                                    <pre><code>BB_NUMBER_THREADS = "4"
+PARALLEL_MAKE = "-j 4"</code></pre>
+                                </div>
+                            </li>
+                            <li><strong class="text-red-600">Fetching Problems:</strong> Network/proxy issues or dead links in `SRC_URI`. Check connectivity and try `bitbake -c fetch <recipe>` to isolate the issue.</li>
+                            <li><strong class="text-red-600">Checksum Mismatch:</strong> The downloaded source doesn't match the expected checksum. The error log provides the new checksum; update it in the recipe.</li>
+                        </ul>
+                        <div class="mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-400">
+                           <p><strong class="font-semibold">Debugging Tip:</strong> The most important file for a failed task is the log file, found at <strong>${WORKDIR}/temp/log.do_&lt;taskname&gt;</strong>. It contains the full output and error messages.</p>
+                        </div>
+                    </div>
+                </details>
+                 <details class="bg-white p-4 rounded-lg shadow-sm">
+                    <summary class="font-semibold text-lg cursor-pointer flex justify-between items-center">Debugging on the Target with an SDK<svg class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></summary>
+                    <div class="mt-4 text-gray-700 space-y-4">
+                        <p>The Yocto SDK (Software Development Kit) provides a cross-compiler toolchain and sysroot for building and debugging applications for your target hardware on your host machine.</p>
+                        <ol class="list-decimal list-inside space-y-2">
+                            <li><strong>Generate the SDK:</strong>
+                                 <div class="code-block bg-gray-900 text-white p-4 rounded-lg my-2">
+                                    <button class="copy-btn absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-sm px-2 py-1 rounded">Copy</button>
+                                    <pre><code>bitbake &lt;image-name&gt; -c populate_sdk</code></pre>
+                                </div>
+                            </li>
+                            <li><strong>Install and source the SDK environment script.</strong> This will set up your shell for cross-compilation.</li>
+                            <li><strong>Include debug tools in your image</strong> by adding `tools-debug` and `ssh-server-openssh` to `EXTRA_IMAGE_FEATURES` in your `local.conf`.</li>
+                            <li>Use `gdbserver` on the target and the cross-GDB from the SDK on your host to perform remote debugging.</li>
+                        </ol>
+                    </div>
+                 </details>
+            </section>
+            
+            <section id="qualcomm" class="content-section space-y-6">
+                <h2 class="text-3xl font-bold border-b pb-2">Qualcomm IQ9 Integration</h2>
+                <details class="bg-white p-4 rounded-lg shadow-sm" open>
+                    <summary class="font-semibold text-lg cursor-pointer flex justify-between items-center">Qualcomm Yocto BSP Layers (meta-qcom)<svg class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></summary>
+                    <div class="mt-4 text-gray-700 space-y-2">
+                       <p>Qualcomm provides a Board Support Package (BSP) as a set of Yocto layers to enable its hardware. The primary layer is <strong class="text-indigo-600">meta-qcom</strong>. This provides the core recipes and machine configurations needed to build for platforms like the IQ9.</p>
+                       <p>Because Qualcomm's BSP involves many different Git repositories, they recommend using the <strong class="text-indigo-600"><span class="tooltip">`repo` tool<span class="tooltiptext">A tool built on top of Git that helps manage projects with multiple repositories.</span></span></strong> to initialize the source code.</p>
+                    </div>
+                </details>
+                <details class="bg-white p-4 rounded-lg shadow-sm">
+                    <summary class="font-semibold text-lg cursor-pointer flex justify-between items-center">Setting up a Qualcomm Yocto Build<svg class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></summary>
+                    <div class="mt-4 text-gray-700 space-y-4">
+                        <p>The typical workflow involves using `repo` to fetch a manifest file, which lists all the required layers and their correct versions.</p>
+                        <div class="code-block bg-gray-900 text-white p-4 rounded-lg">
+                            <button class="copy-btn absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-sm px-2 py-1 rounded">Copy</button>
+                            <pre><code># Install repo tool
+mkdir ~/bin
+curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+chmod a+x ~/bin/repo
+export PATH=~/bin:$PATH
+
+# Initialize and sync the repositories
+mkdir qualcomm-iq9-yocto
+cd qualcomm-iq9-yocto
+repo init -u https://github.com/quic-yocto/qcom-manifest -b qcom-linux-scarthgap -m &lt;manifest.xml&gt;
+repo sync</code></pre>
+                        </div>
+                        <p class="mt-2">After `repo sync` completes, you can source the `oe-init-build-env` script and proceed with your build as usual, making sure your `local.conf` specifies the correct Qualcomm machine.</p>
+                    </div>
+                </details>
+            </section>
+            
+            <section id="example" class="content-section space-y-6">
+                <h2 class="text-3xl font-bold border-b pb-2">Practical Example: "Hello IQ9" App</h2>
+                <details class="bg-white p-4 rounded-lg shadow-sm" open>
+                    <summary class="font-semibold text-lg cursor-pointer flex justify-between items-center">1. Create the Custom Application<svg class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></summary>
+                    <div class="mt-4 text-gray-700 space-y-4">
+                        <p>In your custom layer (`meta-myproject`), create a C file for a simple hello world application.</p>
+                        <p>File location: `meta-myproject/recipes-apps/hello-iq9/files/hello_iq9.c`</p>
+                        <div class="code-block bg-gray-900 text-white p-4 rounded-lg">
+                            <button class="copy-btn absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-sm px-2 py-1 rounded">Copy</button>
+                            <pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    printf("Hello, Qualcomm IQ9 from Yocto!\\n");
+    return 0;
+}</code></pre>
+                        </div>
+                    </div>
+                </details>
+                <details class="bg-white p-4 rounded-lg shadow-sm">
+                    <summary class="font-semibold text-lg cursor-pointer flex justify-between items-center">2. Create the Application Recipe<svg class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></summary>
+                    <div class="mt-4 text-gray-700 space-y-4">
+                        <p>Create a `.bb` file to tell BitBake how to build your app.</p>
+                        <p>File location: `meta-myproject/recipes-apps/hello-iq9/hello-iq9_1.0.bb`</p>
+                        <div class="code-block bg-gray-900 text-white p-4 rounded-lg">
+                            <button class="copy-btn absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-sm px-2 py-1 rounded">Copy</button>
+                            <pre><code>SUMMARY = "Simple 'Hello World' application"
+LICENSE = "MIT"
+LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0b288087f3954208f17ea"
+
+SRC_URI = "file://hello_iq9.c"
+S = "${WORKDIR}"
+
+do_compile() {
+    ${CC} ${CFLAGS} ${LDFLAGS} ${S}/hello_iq9.c -o ${B}/hello_iq9
+}
+
+do_install() {
+    install -d ${D}${bindir}
+    install -m 0755 ${B}/hello_iq9 ${D}${bindir}/
+}</code></pre>
+                        </div>
+                    </div>
+                </details>
+                <details class="bg-white p-4 rounded-lg shadow-sm">
+                    <summary class="font-semibold text-lg cursor-pointer flex justify-between items-center">3. Add App to a Custom Image<svg class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></summary>
+                    <div class="mt-4 text-gray-700 space-y-4">
+                        <p>Create a custom image recipe that includes your new application.</p>
+                        <p>File location: `meta-myproject/recipes-images/images/my-iq9-custom-image.bb`</p>
+                         <div class="code-block bg-gray-900 text-white p-4 rounded-lg">
+                            <button class="copy-btn absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-sm px-2 py-1 rounded">Copy</button>
+                            <pre><code>inherit core-image-minimal
+
+DESCRIPTION = "Custom image for IQ9 with hello-iq9 app."
+
+IMAGE_INSTALL += "hello-iq9"</code></pre>
+                        </div>
+                    </div>
+                </details>
+                <details class="bg-white p-4 rounded-lg shadow-sm">
+                    <summary class="font-semibold text-lg cursor-pointer flex justify-between items-center">4. Build the Image<svg class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></summary>
+                    <div class="mt-4 text-gray-700 space-y-4">
+                        <p>Finally, run BitBake to build your new custom image.</p>
+                        <div class="code-block bg-gray-900 text-white p-4 rounded-lg">
+                            <button class="copy-btn absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-sm px-2 py-1 rounded">Copy</button>
+                            <pre><code>bitbake my-iq9-custom-image</code></pre>
+                        </div>
+                        <p>After the build finishes, you can find the image file in `build/tmp/deploy/images/&lt;machine&gt;/` and flash it to your device.</p>
+                    </div>
+                </details>
+
+                 <div class="bg-indigo-50 p-6 rounded-lg shadow-sm">
+                    <h3 class="font-semibold text-lg mb-4">Final Check</h3>
+                    <div class="quiz" data-quiz-id="final-quiz">
+                        <p class="font-medium mb-2">To add a custom application to your final image, what variable must you modify in your image recipe?</p>
+                        <div class="space-y-2">
+                            <button class="quiz-option text-left w-full p-3 border rounded-lg hover:bg-indigo-100 transition">A) SRC_URI</button>
+                            <button class="quiz-option text-left w-full p-3 border rounded-lg hover:bg-indigo-100 transition" data-correct>B) IMAGE_INSTALL</button>
+                            <button class="quiz-option text-left w-full p-3 border rounded-lg hover:bg-indigo-100 transition">C) LICENSE</button>
+                        </div>
+                        <p class="quiz-feedback mt-3 text-sm font-medium"></p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const sections = document.querySelectorAll('.content-section');
+            const sidebarItems = document.querySelectorAll('.sidebar-item');
+
+            function showSection(hash) {
+                const targetHash = hash || '#introduction';
+                
+                sections.forEach(section => {
+                    if ('#' + section.id === targetHash) {
+                        section.classList.add('active');
+                    } else {
+                        section.classList.remove('active');
+                    }
+                });
+
+                sidebarItems.forEach(item => {
+                    if (item.getAttribute('href') === targetHash) {
+                        item.classList.add('active');
+                    } else {
+                        item.classList.remove('active');
+                    }
+                });
+                
+                 document.querySelector('main').scrollTop = 0;
+            }
+
+            sidebar.addEventListener('click', function(e) {
+                if (e.target.matches('.sidebar-item')) {
+                    e.preventDefault();
+                    const hash = e.target.getAttribute('href');
+                    history.pushState(null, null, hash);
+                    showSection(hash);
+                }
+            });
+
+            window.addEventListener('popstate', function() {
+                showSection(window.location.hash);
+            });
+
+            showSection(window.location.hash);
+            
+            const detailsElements = document.querySelectorAll('details');
+            detailsElements.forEach(details => {
+                const summary = details.querySelector('summary');
+                const icon = summary.querySelector('svg');
+                
+                // Set initial state based on 'open' attribute
+                if (details.open) {
+                    icon.style.transform = 'rotate(180deg)';
+                }
+
+                details.addEventListener('toggle', event => {
+                    if (details.open) {
+                        icon.style.transform = 'rotate(180deg)';
+                    } else {
+                        icon.style.transform = 'rotate(0deg)';
+                    }
+                });
+            });
+
+            document.querySelectorAll('.copy-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const pre = e.target.parentElement.querySelector('pre');
+                    const text = pre.innerText;
+                    
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    try {
+                        document.execCommand('copy');
+                        e.target.textContent = 'Copied!';
+                        setTimeout(() => { e.target.textContent = 'Copy'; }, 2000);
+                    } catch (err) {
+                        console.error('Failed to copy text: ', err);
+                    }
+                    document.body.removeChild(textArea);
+                });
+            });
+
+            const quizzes = document.querySelectorAll('.quiz');
+            quizzes.forEach(quiz => {
+                const options = quiz.querySelectorAll('.quiz-option');
+                const feedback = quiz.querySelector('.quiz-feedback');
+                let answered = false;
+
+                options.forEach(option => {
+                    option.addEventListener('click', () => {
+                        if (answered) return;
+                        answered = true;
+
+                        const isCorrect = option.hasAttribute('data-correct');
+
+                        options.forEach(opt => {
+                             opt.disabled = true;
+                             if(opt.hasAttribute('data-correct')) {
+                                 opt.classList.add('correct');
+                             }
+                        });
+
+                        if (isCorrect) {
+                            feedback.textContent = quiz.dataset.quizId === 'intro-quiz' ? "Correct! BitBake is the build engine that processes metadata to build the image." : "Correct! You add package names to IMAGE_INSTALL to include them in the final image.";
+                            feedback.classList.add('text-green-700');
+                        } else {
+                            option.classList.add('incorrect');
+                             feedback.textContent = quiz.dataset.quizId === 'intro-quiz' ? "Not quite. BitBake is the task scheduler and build engine at the core of Yocto." : "Incorrect. IMAGE_INSTALL is the variable used to add packages to an image.";
+                             feedback.classList.add('text-red-700');
+                        }
+                    });
+                });
+            });
+
+        });
+    </script>
+
+</body>
+</html>
